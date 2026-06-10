@@ -197,7 +197,7 @@ class ProfilePage extends StatelessWidget {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Beranda"),
 
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: "My Booking"),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: "Booking"),
 
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
