@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'screens/auth/login_page.dart';
+import 'screens/auth/check_login_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
 
       theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
 
-      home: const LoginPage(),
+      home: const CheckLoginPage(),
     );
   }
 }

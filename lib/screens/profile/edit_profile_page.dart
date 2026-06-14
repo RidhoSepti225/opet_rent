@@ -1,7 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class EditProfilePage extends StatelessWidget {
+import '../../services/auth_service.dart';
+
+class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
+
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final TextEditingController namaController = TextEditingController();
+
+  final TextEditingController emailController = TextEditingController();
+
+  bool isLoading = false;
+
+  int userId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    loadProfile();
+  }
+
+  Future<void> loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      userId = prefs.getInt("user_id") ?? 0;
+
+      namaController.text = prefs.getString("user_name") ?? "";
+
+      emailController.text = prefs.getString("user_email") ?? "";
+    });
+  }
+
+  Future<void> simpanProfile() async {
+    if (namaController.text.isEmpty || emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Nama dan email wajib diisi")),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final result = await AuthService.updateProfile(
+      userId: userId,
+      name: namaController.text,
+      email: emailController.text,
+    );
+
+    setState(() {
+      isLoading = false;
+    });
+
+    if (result["success"] == true) {
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString("user_name", result["user"]["name"]);
+
+      await prefs.setString("user_email", result["user"]["email"]);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profil berhasil diperbarui")),
+      );
+
+      Navigator.pop(context);
+    } else {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result["message"] ?? "Gagal memperbarui profil"),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    namaController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +112,12 @@ class EditProfilePage extends StatelessWidget {
 
             child: Column(
               children: [
-                // HEADER
                 Row(
                   children: [
                     IconButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
-
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                     ),
 
@@ -56,27 +142,16 @@ class EditProfilePage extends StatelessWidget {
                 const CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.white,
-
                   child: Icon(Icons.person, size: 80, color: Color(0xFF0A6DD9)),
                 ),
 
                 const SizedBox(height: 30),
 
-                _buildField(
-                  label: "Nama Pengguna",
-                  hint: "Masukkan Nama Pengguna",
-                ),
+                _buildField(label: "Nama Pengguna", controller: namaController),
 
                 const SizedBox(height: 15),
 
-                _buildField(
-                  label: "No. Whatsapp",
-                  hint: "Masukkan No. Whatsapp",
-                ),
-
-                const SizedBox(height: 15),
-
-                _buildField(label: "Username", hint: "Masukkan Username"),
+                _buildField(label: "Email", controller: emailController),
 
                 const SizedBox(height: 30),
 
@@ -89,21 +164,17 @@ class EditProfilePage extends StatelessWidget {
                       backgroundColor: const Color(0xFF1976F3),
                     ),
 
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Profil berhasil diperbarui"),
-                        ),
-                      );
-                    },
+                    onPressed: isLoading ? null : simpanProfile,
 
-                    child: const Text(
-                      "Simpan Perubahan",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            "Simpan Perubahan",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -114,7 +185,10 @@ class EditProfilePage extends StatelessWidget {
     );
   }
 
-  static Widget _buildField({required String label, required String hint}) {
+  Widget _buildField({
+    required String label,
+    required TextEditingController controller,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
 
@@ -124,9 +198,8 @@ class EditProfilePage extends StatelessWidget {
         const SizedBox(height: 4),
 
         TextField(
+          controller: controller,
           decoration: InputDecoration(
-            hintText: hint,
-
             filled: true,
             fillColor: Colors.white,
 

@@ -2,10 +2,22 @@ import 'package:flutter/material.dart';
 import 'payment_page.dart';
 
 class RincianTagihanPage extends StatelessWidget {
-  const RincianTagihanPage({super.key});
+  final Map<String, dynamic> kendaraan;
+  final int paket;
+  final int bookingId;
+
+  const RincianTagihanPage({
+    super.key,
+    required this.kendaraan,
+    required this.paket,
+    required this.bookingId,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hargaSewa = double.parse(kendaraan["harga_sewa"].toString());
+
+    final total = hargaSewa * paket;
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -22,7 +34,6 @@ class RincianTagihanPage extends StatelessWidget {
 
             child: Column(
               children: [
-                // HEADER
                 Row(
                   children: [
                     IconButton(
@@ -63,15 +74,14 @@ class RincianTagihanPage extends StatelessWidget {
 
                           child: Column(
                             children: [
-                              _itemTagihan("Paket Sewa (hari)", "Rp. xxx.xxx"),
+                              _itemTagihan("Kendaraan", kendaraan["nama"]),
 
                               const SizedBox(height: 20),
 
-                              _itemTagihan("Biaya Layanan", "Rp. xxx.xxx"),
-
-                              const SizedBox(height: 20),
-
-                              _itemTagihan("Opet", "Rp. xxx.xxx"),
+                              _itemTagihan(
+                                "Paket Sewa ($paket Hari)",
+                                "Rp ${total.toInt()}",
+                              ),
 
                               const SizedBox(height: 20),
 
@@ -81,7 +91,7 @@ class RincianTagihanPage extends StatelessWidget {
 
                               _itemTagihan(
                                 "Total Tagihan",
-                                "Rp. xxx.xxx",
+                                "Rp ${total.toInt()}",
                                 isBold: true,
                               ),
                             ],
@@ -104,11 +114,14 @@ class RincianTagihanPage extends StatelessWidget {
                     ),
 
                     onPressed: () {
-                      print("TOMBOL DIKLIK");
-
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const PaymentPage()),
+                        MaterialPageRoute(
+                          builder: (_) => PaymentPage(
+                            totalTagihan: total.toInt(),
+                            bookingId: bookingId,
+                          ),
+                        ),
                       );
                     },
 
@@ -140,17 +153,20 @@ class RincianTagihanPage extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+            ),
           ),
         ),
 
         Text(
           value,
+          textAlign: TextAlign.end,
           style: TextStyle(
             color: Colors.white,
             fontSize: 16,

@@ -5,10 +5,16 @@ import '../kendaraan/detail_kendaraan_page.dart';
 import '../my_booking/my_booking_page.dart';
 import '../history/riwayat_booking_page.dart';
 import '../profile/profile_page.dart';
+import '../../services/api_service.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,19 +40,6 @@ class HomePage extends StatelessWidget {
                 // HEADER
                 Row(
                   children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-
                     const SizedBox(width: 6),
 
                     const Column(
@@ -215,102 +208,119 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 8),
 
                 Expanded(
-                  child: GridView.builder(
-                    physics: const BouncingScrollPhysics(),
+                  child: FutureBuilder<List<dynamic>>(
+                    future: ApiService.getKendaraan(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        );
+                      }
 
-                    itemCount: 6,
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text(
+                            "Error: ${snapshot.error}",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
+                      }
 
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 1.2,
-                        ),
+                      final kendaraan = snapshot.data ?? [];
 
-                    itemBuilder: (context, index) {
-                      final kendaraan = [
-                        {
-                          "nama": "Honda Vario 160",
-                          "harga": "Rp.150.000/hari",
-                          "icon": Icons.two_wheeler,
-                        },
-                        {
-                          "nama": "Toyota Avanza",
-                          "harga": "Rp.350.000/hari",
-                          "icon": Icons.directions_car,
-                        },
-                        {
-                          "nama": "Yamaha NMAX",
-                          "harga": "Rp.180.000/hari",
-                          "icon": Icons.two_wheeler,
-                        },
-                        {
-                          "nama": "Toyota Innova",
-                          "harga": "Rp.450.000/hari",
-                          "icon": Icons.directions_car,
-                        },
-                        {
-                          "nama": "Honda PCX",
-                          "harga": "Rp.170.000/hari",
-                          "icon": Icons.two_wheeler,
-                        },
-                        {
-                          "nama": "Mitsubishi Xpander",
-                          "harga": "Rp.400.000/hari",
-                          "icon": Icons.directions_car,
-                        },
-                      ];
+                      return GridView.builder(
+                        itemCount: kendaraan.length,
 
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => DetailKendaraanPage(
-                                nama: kendaraan[index]["nama"] as String,
-                                harga: kendaraan[index]["harga"] as String,
-                                iconKendaraan:
-                                    kendaraan[index]["icon"] as IconData,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              childAspectRatio: 0.78,
+                            ),
+
+                        itemBuilder: (context, index) {
+                          final item = kendaraan[index];
+
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DetailKendaraanPage(kendaraan: item),
+                                ),
+                              );
+                            },
+
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+
+                                      child: Image.network(
+                                        "https://opet-rent.web.id/storage/${item["gambar"]}",
+
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Container(
+                                                color: Colors.grey.shade300,
+
+                                                child: const Center(
+                                                  child: Icon(
+                                                    Icons.image_not_supported,
+                                                    size: 40,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 6),
+
+                                  Text(
+                                    item["nama"],
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+
+                                    style: const TextStyle(
+                                      color: Color(0xFF0A6DD9),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 2),
+
+                                  Text(
+                                    "Rp ${double.parse(item["harga_sewa"]).toInt()}/hari",
+
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
                         },
-
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.end,
-
-                            children: [
-                              Text(
-                                kendaraan[index]["nama"] as String,
-                                style: const TextStyle(
-                                  color: Color(0xFF0A6DD9),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-
-                              const SizedBox(height: 2),
-
-                              Text(
-                                kendaraan[index]["harga"] as String,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       );
                     },
                   ),

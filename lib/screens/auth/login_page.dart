@@ -1,19 +1,83 @@
 import 'package:flutter/material.dart';
 import '../../core/colors.dart';
+import '../../services/auth_service.dart';
 import '../home/home_page.dart';
+import 'register_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  bool isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> login() async {
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email dan password wajib diisi")),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final result = await AuthService.login(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+    );
+
+    setState(() {
+      isLoading = false;
+    });
+
+    if (result["success"] == true) {
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setInt("user_id", result["user"]["id"]);
+
+      await prefs.setString("user_name", result["user"]["name"]);
+
+      await prefs.setString("user_email", result["user"]["email"]);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result["message"] ?? "Login gagal")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+
               child: Column(
                 children: [
                   Row(
@@ -24,6 +88,7 @@ class LoginPage extends StatelessWidget {
                           thickness: 1,
                         ),
                       ),
+
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
@@ -35,6 +100,7 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                       ),
+
                       Expanded(
                         child: Divider(
                           color: Colors.white.withValues(alpha: 0.7),
@@ -57,6 +123,7 @@ class LoginPage extends StatelessWidget {
                         ),
                       ],
                     ),
+
                     child: Image.asset(
                       'assets/images/logo_opet.png',
                       width: 160,
@@ -101,10 +168,12 @@ class LoginPage extends StatelessWidget {
 
                   Container(
                     padding: const EdgeInsets.all(18),
+
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(25),
                     ),
+
                     child: Column(
                       children: [
                         const Text(
@@ -119,15 +188,20 @@ class LoginPage extends StatelessWidget {
                         const SizedBox(height: 18),
 
                         TextField(
+                          controller: emailController,
+
                           decoration: InputDecoration(
-                            hintText: "Masukan Username",
+                            hintText: "Masukan Email",
                             hintStyle: TextStyle(color: Colors.grey[500]),
+
                             filled: true,
                             fillColor: Colors.white,
+
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 15,
                               vertical: 15,
                             ),
+
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide.none,
@@ -138,16 +212,21 @@ class LoginPage extends StatelessWidget {
                         const SizedBox(height: 15),
 
                         TextField(
+                          controller: passwordController,
                           obscureText: true,
+
                           decoration: InputDecoration(
                             hintText: "Masukan Password",
                             hintStyle: TextStyle(color: Colors.grey[500]),
+
                             filled: true,
                             fillColor: Colors.white,
+
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 15,
                               vertical: 15,
                             ),
+
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide.none,
@@ -160,31 +239,34 @@ class LoginPage extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           height: 50,
+
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1976F3),
+
                               elevation: 8,
+
                               shadowColor: Colors.black.withValues(alpha: 0.25),
+
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const HomePage(),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              "MASUK",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
+
+                            onPressed: isLoading ? null : login,
+
+                            child: isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    "MASUK",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
                           ),
                         ),
 
@@ -195,10 +277,11 @@ class LoginPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const HomePage(),
+                                builder: (_) => const RegisterPage(),
                               ),
                             );
                           },
+
                           child: const Text(
                             "Belum punya akun ? Register sekarang",
                             style: TextStyle(color: Colors.white, fontSize: 12),

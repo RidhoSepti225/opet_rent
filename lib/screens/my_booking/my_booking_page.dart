@@ -1,11 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/booking_service.dart';
 import 'detail_booking_page.dart';
 import '../home/home_page.dart';
 import '../history/riwayat_booking_page.dart';
 import '../profile/profile_page.dart';
 
-class MyBookingPage extends StatelessWidget {
+class MyBookingPage extends StatefulWidget {
   const MyBookingPage({super.key});
+
+  @override
+  State<MyBookingPage> createState() => _MyBookingPageState();
+}
+
+class _MyBookingPageState extends State<MyBookingPage> {
+  bool isLoading = true;
+  List bookings = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadBooking();
+  }
+
+  Future<void> loadBooking() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final userId = prefs.getInt("user_id") ?? 0;
+
+    final data = await BookingService.getHistory(userId);
+
+    final today = DateTime.now();
+
+    bookings = data.where((booking) {
+      final selesai = DateTime.parse(booking["tanggal_selesai"]);
+
+      return booking["status"] != "ditolak" &&
+          (selesai.isAfter(today) ||
+              (selesai.year == today.year &&
+                  selesai.month == today.month &&
+                  selesai.day == today.day));
+    }).toList();
+
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case "pending":
+        return Colors.orange;
+
+      case "menunggu":
+        return Colors.amber;
+
+      case "disetujui":
+        return Colors.green;
+
+      case "ditolak":
+        return Colors.red;
+
+      default:
+        return Colors.blue;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,34 +79,17 @@ class MyBookingPage extends StatelessWidget {
             colors: [Color(0xFF0A6DD9), Color(0xFF4DB8FF)],
           ),
         ),
-
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-
             child: Column(
               children: [
-                // HEADER
                 Row(
                   children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-
                     const SizedBox(width: 6),
 
                     const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-
                       children: [
                         Text(
                           "OPET",
@@ -56,16 +100,13 @@ class MyBookingPage extends StatelessWidget {
                             height: 1,
                           ),
                         ),
-
                         SizedBox(height: 2),
-
                         Text(
                           "OPTIMAL PERFORMA EKSPRES TRANSPORT",
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 8,
                             fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
                           ),
                         ),
                       ],
@@ -79,34 +120,128 @@ class MyBookingPage extends StatelessWidget {
 
                 const SizedBox(height: 4),
 
-                Divider(color: Colors.white.withOpacity(0.4), thickness: 1),
+                Divider(color: Colors.white.withOpacity(0.4)),
 
                 const SizedBox(height: 10),
 
                 Expanded(
-                  child: ListView(
-                    children: [
-                      _bookingCard(
-                        context,
-                        nama: "Honda Vario 160",
-                        status: "Sedang Digunakan",
-                        tanggalPinjam: "01/06/2026",
-                        tanggalKembali: "05/06/2026",
-                        icon: Icons.two_wheeler,
-                      ),
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : bookings.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "Belum ada booking aktif",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: bookings.length,
+                          itemBuilder: (context, index) {
+                            final booking = bookings[index];
 
-                      const SizedBox(height: 12),
+                            final kendaraan = booking["kendaraan"];
 
-                      _bookingCard(
-                        context,
-                        nama: "Toyota Avanza",
-                        status: "Siap Diambil",
-                        tanggalPinjam: "10/06/2026",
-                        tanggalKembali: "12/06/2026",
-                        icon: Icons.directions_car,
-                      ),
-                    ],
-                  ),
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        "https://opet-rent.web.id/storage/${kendaraan["gambar"]}",
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Container(
+                                                width: 90,
+                                                height: 90,
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(Icons.image),
+                                              );
+                                            },
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 12),
+
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            kendaraan["nama"],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 5),
+
+                                          Text(
+                                            "Tanggal Peminjaman : ${booking["tanggal_mulai"]}",
+                                          ),
+
+                                          Text(
+                                            "Tanggal Pengembalian : ${booking["tanggal_selesai"]}",
+                                          ),
+
+                                          const SizedBox(height: 5),
+
+                                          Text(
+                                            "Status : ${booking["status"]}",
+                                            style: TextStyle(
+                                              color: getStatusColor(
+                                                booking["status"],
+                                              ),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 8),
+
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(
+                                                0xFF1976F3,
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      DetailBookingPage(
+                                                        booking: booking,
+                                                      ),
+                                                ),
+                                              );
+                                            },
+                                            child: const Text(
+                                              "Lihat Detail Kendaraan",
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -116,23 +251,15 @@ class MyBookingPage extends StatelessWidget {
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,
-
         type: BottomNavigationBarType.fixed,
-
         selectedItemColor: const Color(0xFF0A6DD9),
-
         unselectedItemColor: Colors.grey,
-
         onTap: (index) {
           if (index == 0) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const HomePage()),
             );
-          }
-
-          if (index == 1) {
-            // sedang di halaman booking
           }
 
           if (index == 2) {
@@ -149,108 +276,14 @@ class MyBookingPage extends StatelessWidget {
             );
           }
         },
-
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Beranda"),
-
           BottomNavigationBarItem(icon: Icon(Icons.book), label: "Booking"),
-
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
             label: "Riwayat",
           ),
-
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
-      ),
-    );
-  }
-
-  Widget _bookingCard(
-    BuildContext context, {
-    required String nama,
-    required String status,
-    required String tanggalPinjam,
-    required String tanggalKembali,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-      ),
-
-      child: Row(
-        children: [
-          Container(
-            width: 90,
-            height: 90,
-
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
-            ),
-
-            child: Icon(icon, size: 50, color: const Color(0xFF0A6DD9)),
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-                Text(
-                  nama,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-
-                const SizedBox(height: 5),
-
-                Text("Tanggal Peminjaman : $tanggalPinjam"),
-
-                Text("Tanggal Pengembalian : $tanggalKembali"),
-
-                const SizedBox(height: 5),
-
-                Text(
-                  "Status : $status",
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976F3),
-                  ),
-
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const DetailBookingPage(),
-                      ),
-                    );
-                  },
-
-                  child: const Text(
-                    "Lihat Detail Kendaraan",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

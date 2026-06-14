@@ -2,16 +2,9 @@ import 'package:flutter/material.dart';
 import '../booking/data_diri_page.dart';
 
 class DetailKendaraanPage extends StatefulWidget {
-  final String nama;
-  final String harga;
-  final IconData iconKendaraan;
+  final Map<String, dynamic> kendaraan;
 
-  const DetailKendaraanPage({
-    super.key,
-    required this.nama,
-    required this.harga,
-    required this.iconKendaraan,
-  });
+  const DetailKendaraanPage({super.key, required this.kendaraan});
 
   @override
   State<DetailKendaraanPage> createState() => _DetailKendaraanPageState();
@@ -19,6 +12,7 @@ class DetailKendaraanPage extends StatefulWidget {
 
 class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
   int selectedPaket = 1;
+  DateTime? tanggalPemakaian;
 
   @override
   Widget build(BuildContext context) {
@@ -66,17 +60,31 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
 
                   // ICON KENDARAAN
                   Center(
-                    child: Icon(
-                      widget.iconKendaraan,
-                      size: 140,
-                      color: Colors.white,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+
+                      child: Image.network(
+                        "https://opet-rent.web.id/storage/${widget.kendaraan["gambar"]}",
+
+                        height: 220,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.image_not_supported,
+                            size: 120,
+                            color: Colors.white,
+                          );
+                        },
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 10),
 
                   Text(
-                    widget.nama,
+                    widget.kendaraan["nama"],
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -87,14 +95,46 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
                   const SizedBox(height: 4),
 
                   Text(
-                    widget.harga,
+                    "Rp ${double.parse(widget.kendaraan["harga_sewa"]).toInt()}/hari",
                     style: const TextStyle(color: Colors.white70, fontSize: 18),
                   ),
 
                   const SizedBox(height: 20),
 
+                  Text(
+                    "• CC : ${widget.kendaraan["cc"]}",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  Text(
+                    "• Tahun : ${widget.kendaraan["tahun"]}",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  Text(
+                    "• Transmisi : ${widget.kendaraan["transmisi"]}",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  Text(
+                    "• Warna : ${widget.kendaraan["warna"]}",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Divider(color: Colors.white.withValues(alpha: 0.5)),
+
+                  const SizedBox(height: 10),
+
                   const Text(
-                    "Spesifikasi",
+                    "Tanggal Pemakaian",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -104,37 +144,39 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
 
                   const SizedBox(height: 10),
 
-                  const Text(
-                    "• Kapasitas Mesin",
-                    style: TextStyle(color: Colors.white),
+                  SizedBox(
+                    width: double.infinity,
+
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                      ),
+
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2030),
+                        );
+
+                        if (picked != null) {
+                          setState(() {
+                            tanggalPemakaian = picked;
+                          });
+                        }
+                      },
+
+                      child: Text(
+                        tanggalPemakaian == null
+                            ? "Pilih Tanggal"
+                            : "${tanggalPemakaian!.day}/${tanggalPemakaian!.month}/${tanggalPemakaian!.year}",
+                        style: const TextStyle(color: Color(0xFF0A6DD9)),
+                      ),
+                    ),
                   ),
 
-                  const SizedBox(height: 5),
-
-                  const Text(
-                    "• Tahun Produksi",
-                    style: TextStyle(color: Colors.white),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  const Text(
-                    "• Tipe Transmisi Kendaraan",
-                    style: TextStyle(color: Colors.white),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  const Text(
-                    "• Kondisi Terawat",
-                    style: TextStyle(color: Colors.white),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Divider(color: Colors.white.withValues(alpha: 0.5)),
-
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
 
                   const Text(
                     "Pilih Paket Sewa",
@@ -155,9 +197,23 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
                     ),
                     child: Column(
                       children: [
-                        _paketTile(1, "1 Hari", "Rp. xxx"),
-                        _paketTile(2, "2 Hari", "Rp. xxx"),
-                        _paketTile(3, "3 Hari", "Rp. xxx"),
+                        _paketTile(
+                          1,
+                          "1 Hari",
+                          "Rp ${double.parse(widget.kendaraan["harga_sewa"]).toInt()}",
+                        ),
+
+                        _paketTile(
+                          2,
+                          "2 Hari",
+                          "Rp ${(double.parse(widget.kendaraan["harga_sewa"]) * 2).toInt()}",
+                        ),
+
+                        _paketTile(
+                          3,
+                          "3 Hari",
+                          "Rp ${(double.parse(widget.kendaraan["harga_sewa"]) * 3).toInt()}",
+                        ),
                       ],
                     ),
                   ),
@@ -175,7 +231,13 @@ class _DetailKendaraanPageState extends State<DetailKendaraanPage> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => DataDiriPage()),
+                          MaterialPageRoute(
+                            builder: (_) => DataDiriPage(
+                              kendaraan: widget.kendaraan,
+                              paket: selectedPaket,
+                              tanggalPemakaian: tanggalPemakaian,
+                            ),
+                          ),
                         );
                       },
 

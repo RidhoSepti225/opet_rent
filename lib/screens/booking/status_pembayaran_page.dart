@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import '../home/home_page.dart';
 
 class StatusPembayaranPage extends StatelessWidget {
-  const StatusPembayaranPage({super.key});
+  final int bookingId;
+  final String metode;
+
+  const StatusPembayaranPage({
+    super.key,
+    required this.bookingId,
+    required this.metode,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final bool isOnoPay = metode == "OnoPay";
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -15,54 +24,48 @@ class StatusPembayaranPage extends StatelessWidget {
             colors: [Color(0xFF0A6DD9), Color(0xFF4DB8FF)],
           ),
         ),
-
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-
             child: Column(
               children: [
-                // HEADER
                 Row(
                   children: [
-                    IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-
                     const Expanded(
                       child: Text(
                         "Status Pembayaran",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-
                     Image.asset("assets/images/logo_opet.png", width: 30),
                   ],
                 ),
 
                 const Spacer(),
 
-                // ICON BERHASIL
-                const CircleAvatar(
-                  radius: 55,
+                CircleAvatar(
+                  radius: 60,
                   backgroundColor: Colors.green,
-
-                  child: Icon(Icons.check, color: Colors.white, size: 60),
+                  child: Icon(
+                    isOnoPay ? Icons.account_balance_wallet : Icons.check,
+                    color: Colors.white,
+                    size: 60,
+                  ),
                 ),
 
                 const SizedBox(height: 25),
 
-                const Text(
-                  "Pembayaran Berhasil",
-                  style: TextStyle(
+                Text(
+                  isOnoPay
+                      ? "Pembayaran OnoPay Berhasil"
+                      : "Bukti Pembayaran Terkirim",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -71,59 +74,72 @@ class StatusPembayaranPage extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                const Text(
-                  "Terima kasih telah melakukan pembayaran.",
+                Text(
+                  "Invoice OPET-$bookingId berhasil diproses.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
 
                 const SizedBox(height: 35),
 
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-
+                  padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(18),
                   ),
-
-                  child: const Column(
+                  child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
-                        children: [
+                        children: const [
                           Text(
                             "Status Pembayaran",
                             style: TextStyle(color: Colors.white),
                           ),
-
                           Text(
-                            "Lunas",
+                            "Menunggu Verifikasi",
                             style: TextStyle(
-                              color: Colors.greenAccent,
+                              color: Colors.amber,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
 
-                      SizedBox(height: 15),
+                      const SizedBox(height: 18),
 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
-                        children: [
+                        children: const [
                           Text(
                             "Status Booking",
                             style: TextStyle(color: Colors.white),
                           ),
-
                           Text(
                             "Menunggu Persetujuan",
                             style: TextStyle(
                               color: Colors.amber,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Metode",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          Text(
+                            metode,
+                            style: const TextStyle(
+                              color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -135,23 +151,26 @@ class StatusPembayaranPage extends StatelessWidget {
 
                 const SizedBox(height: 25),
 
-                const Text(
-                  "Admin akan melakukan verifikasi booking Anda. Silakan cek status booking secara berkala.",
+                Text(
+                  isOnoPay
+                      ? "Pembayaran berhasil dilakukan menggunakan saldo OnoPay. Admin akan memverifikasi booking Anda sebelum kendaraan dapat digunakan."
+                      : "Admin akan memverifikasi bukti pembayaran dan booking Anda. Silakan cek menu Booking atau Riwayat secara berkala.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
 
                 const Spacer(),
 
                 SizedBox(
                   width: double.infinity,
-                  height: 45,
-
+                  height: 52,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1976F3),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                         context,
@@ -159,12 +178,12 @@ class StatusPembayaranPage extends StatelessWidget {
                         (route) => false,
                       );
                     },
-
                     child: const Text(
                       "Kembali ke Beranda",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF0A6DD9),
                         fontWeight: FontWeight.bold,
+                        fontSize: 15,
                       ),
                     ),
                   ),

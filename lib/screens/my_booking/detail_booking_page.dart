@@ -1,14 +1,35 @@
 import 'package:flutter/material.dart';
 
 class DetailBookingPage extends StatelessWidget {
-  const DetailBookingPage({super.key});
+  final Map<String, dynamic> booking;
+  Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case "pending":
+        return Colors.orange;
+
+      case "menunggu":
+        return Colors.amber;
+
+      case "disetujui":
+        return Colors.greenAccent;
+
+      case "ditolak":
+        return Colors.red;
+
+      default:
+        return Colors.white;
+    }
+  }
+
+  const DetailBookingPage({super.key, required this.booking});
 
   @override
   Widget build(BuildContext context) {
+    final kendaraan = booking["kendaraan"];
+
     return Scaffold(
       body: Container(
         width: double.infinity,
-
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -16,15 +37,12 @@ class DetailBookingPage extends StatelessWidget {
             colors: [Color(0xFF0A6DD9), Color(0xFF4DB8FF)],
           ),
         ),
-
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-
                 children: [
                   // HEADER
                   Row(
@@ -35,7 +53,6 @@ class DetailBookingPage extends StatelessWidget {
                         },
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
-
                       const Expanded(
                         child: Text(
                           "Detail Kendaraan",
@@ -47,27 +64,36 @@ class DetailBookingPage extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       Image.asset("assets/images/logo_opet.png", width: 30),
                     ],
                   ),
 
                   const SizedBox(height: 20),
 
-                  // GAMBAR KENDARAAN
-                  const Center(
-                    child: Icon(
-                      Icons.two_wheeler,
-                      color: Colors.white,
-                      size: 140,
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        "https://opet-rent.web.id/storage/${kendaraan["gambar"]}",
+                        height: 220,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) {
+                          return const Icon(
+                            Icons.image_not_supported,
+                            size: 120,
+                            color: Colors.white,
+                          );
+                        },
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 15),
 
-                  const Text(
-                    "Honda Vario 160",
-                    style: TextStyle(
+                  Text(
+                    kendaraan["nama"] ?? "-",
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -76,9 +102,9 @@ class DetailBookingPage extends StatelessWidget {
 
                   const SizedBox(height: 4),
 
-                  const Text(
-                    "Rp.150.000/hari",
-                    style: TextStyle(color: Colors.white70, fontSize: 18),
+                  Text(
+                    "Rp ${double.parse(kendaraan["harga_sewa"].toString()).toInt()}/hari",
+                    style: const TextStyle(color: Colors.white70, fontSize: 18),
                   ),
 
                   const SizedBox(height: 20),
@@ -94,37 +120,30 @@ class DetailBookingPage extends StatelessWidget {
 
                   const SizedBox(height: 10),
 
-                  const Text(
-                    "• Kapasitas Mesin",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  Text(
+                    "• CC : ${kendaraan["cc"]}",
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
 
                   const SizedBox(height: 5),
 
-                  const Text(
-                    "• Tahun Produksi",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  Text(
+                    "• Tahun : ${kendaraan["tahun"]}",
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
 
                   const SizedBox(height: 5),
 
-                  const Text(
-                    "• Tipe Transmisi Kendaraan",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  Text(
+                    "• Transmisi : ${kendaraan["transmisi"]}",
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
 
                   const SizedBox(height: 5),
 
-                  const Text(
-                    "• Kondisi Terawat",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  const Text(
-                    "• Dll",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  Text(
+                    "• Warna : ${kendaraan["warna"]}",
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
 
                   const SizedBox(height: 20),
@@ -136,17 +155,14 @@ class DetailBookingPage extends StatelessWidget {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
-
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(10),
                     ),
-
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-
                       children: [
-                        Text(
+                        const Text(
                           "Informasi Booking",
                           style: TextStyle(
                             color: Colors.white,
@@ -155,26 +171,26 @@ class DetailBookingPage extends StatelessWidget {
                           ),
                         ),
 
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
                         Text(
-                          "Tanggal Peminjaman : 01/06/2026",
-                          style: TextStyle(color: Colors.white),
+                          "Tanggal Peminjaman : ${booking["tanggal_mulai"]}",
+                          style: const TextStyle(color: Colors.white),
                         ),
 
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
 
                         Text(
-                          "Tanggal Pengembalian : 05/06/2026",
-                          style: TextStyle(color: Colors.white),
+                          "Tanggal Pengembalian : ${booking["tanggal_selesai"]}",
+                          style: const TextStyle(color: Colors.white),
                         ),
 
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
 
                         Text(
-                          "Status : Sedang Digunakan",
+                          "Status : ${booking["status"]}",
                           style: TextStyle(
-                            color: Colors.greenAccent,
+                            color: getStatusColor(booking["status"]),
                             fontWeight: FontWeight.bold,
                           ),
                         ),

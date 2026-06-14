@@ -1,11 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/booking_service.dart';
 import '../home/home_page.dart';
-import '../kendaraan/detail_kendaraan_page.dart';
-import '../profile/profile_page.dart';
 import '../my_booking/my_booking_page.dart';
+import '../profile/profile_page.dart';
+import '../my_booking/detail_booking_page.dart';
 
-class RiwayatPage extends StatelessWidget {
+class RiwayatPage extends StatefulWidget {
   const RiwayatPage({super.key});
+
+  @override
+  State<RiwayatPage> createState() => _RiwayatPageState();
+}
+
+class _RiwayatPageState extends State<RiwayatPage> {
+  bool isLoading = true;
+  List riwayat = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadRiwayat();
+  }
+
+  Future<void> loadRiwayat() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final userId = prefs.getInt("user_id") ?? 0;
+
+    final data = await BookingService.getHistory(userId);
+
+    final today = DateTime.now();
+
+    riwayat = data.where((booking) {
+      final selesai = DateTime.parse(booking["tanggal_selesai"]);
+
+      return booking["status"] == "ditolak" || selesai.isBefore(today);
+    }).toList();
+
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case "ditolak":
+        return Colors.red;
+
+      case "disetujui":
+        return Colors.green;
+
+      case "pending":
+        return Colors.orange;
+
+      case "menunggu":
+        return Colors.amber;
+
+      default:
+        return Colors.blue;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,34 +75,17 @@ class RiwayatPage extends StatelessWidget {
             colors: [Color(0xFF0A6DD9), Color(0xFF4DB8FF)],
           ),
         ),
-
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-
             child: Column(
               children: [
-                // HEADER
                 Row(
                   children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-
                     const SizedBox(width: 6),
 
                     const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-
                       children: [
                         Text(
                           "OPET",
@@ -65,7 +105,6 @@ class RiwayatPage extends StatelessWidget {
                             color: Colors.white70,
                             fontSize: 8,
                             fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
                           ),
                         ),
                       ],
@@ -84,29 +123,123 @@ class RiwayatPage extends StatelessWidget {
                 const SizedBox(height: 10),
 
                 Expanded(
-                  child: ListView(
-                    children: [
-                      _riwayatCard(
-                        context,
-                        nama: "Honda Vario 160",
-                        tanggalPinjam: "01/05/2026",
-                        tanggalKembali: "05/05/2026",
-                        rating: 5,
-                        icon: Icons.two_wheeler,
-                      ),
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : riwayat.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "Belum ada riwayat booking",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: riwayat.length,
+                          itemBuilder: (context, index) {
+                            final booking = riwayat[index];
 
-                      const SizedBox(height: 12),
+                            final kendaraan = booking["kendaraan"];
 
-                      _riwayatCard(
-                        context,
-                        nama: "Toyota Avanza",
-                        tanggalPinjam: "10/05/2026",
-                        tanggalKembali: "12/05/2026",
-                        rating: 4,
-                        icon: Icons.directions_car,
-                      ),
-                    ],
-                  ),
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        "https://opet-rent.web.id/storage/${kendaraan["gambar"]}",
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Container(
+                                                width: 90,
+                                                height: 90,
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(Icons.image),
+                                              );
+                                            },
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 12),
+
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            kendaraan["nama"],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 5),
+
+                                          Text(
+                                            "Tanggal Peminjaman : ${booking["tanggal_mulai"]}",
+                                          ),
+
+                                          Text(
+                                            "Tanggal Pengembalian : ${booking["tanggal_selesai"]}",
+                                          ),
+
+                                          const SizedBox(height: 5),
+
+                                          Text(
+                                            "Status : ${booking["status"]}",
+                                            style: TextStyle(
+                                              color: getStatusColor(
+                                                booking["status"],
+                                              ),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 8),
+
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(
+                                                0xFF1976F3,
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      DetailBookingPage(
+                                                        booking: booking,
+                                                      ),
+                                                ),
+                                              );
+                                            },
+                                            child: const Text(
+                                              "Lihat Detail Kendaraan",
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -116,13 +249,9 @@ class RiwayatPage extends StatelessWidget {
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 2,
-
         type: BottomNavigationBarType.fixed,
-
         selectedItemColor: const Color(0xFF0A6DD9),
-
         unselectedItemColor: Colors.grey,
-
         onTap: (index) {
           if (index == 0) {
             Navigator.pushReplacement(
@@ -138,8 +267,6 @@ class RiwayatPage extends StatelessWidget {
             );
           }
 
-          if (index == 2) {}
-
           if (index == 3) {
             Navigator.push(
               context,
@@ -147,122 +274,14 @@ class RiwayatPage extends StatelessWidget {
             );
           }
         },
-
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Beranda"),
-
           BottomNavigationBarItem(icon: Icon(Icons.book), label: "Booking"),
-
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
             label: "Riwayat",
           ),
-
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
-      ),
-    );
-  }
-
-  Widget _riwayatCard(
-    BuildContext context, {
-    required String nama,
-    required String tanggalPinjam,
-    required String tanggalKembali,
-    required int rating,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-      ),
-
-      child: Row(
-        children: [
-          Container(
-            width: 90,
-            height: 90,
-
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
-            ),
-
-            child: Icon(icon, size: 50, color: const Color(0xFF0A6DD9)),
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-                Text(
-                  nama,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-
-                const SizedBox(height: 5),
-
-                Text("Tanggal Peminjaman : $tanggalPinjam"),
-
-                Text("Tanggal Pengembalian : $tanggalKembali"),
-
-                const SizedBox(height: 5),
-
-                const Text(
-                  "Status : SELESAI",
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 5),
-
-                Row(
-                  children: List.generate(
-                    rating,
-                    (index) =>
-                        const Icon(Icons.star, color: Colors.amber, size: 18),
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976F3),
-                  ),
-
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const DetailKendaraanPage(
-                          nama: "Honda Vario 160",
-                          harga: "Rp.150.000/hari",
-                          iconKendaraan: Icons.two_wheeler,
-                        ),
-                      ),
-                    );
-                  },
-
-                  child: const Text(
-                    "Booking Ulang",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

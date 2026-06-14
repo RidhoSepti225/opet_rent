@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import 'rincian_tagihan_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/booking_service.dart';
 
 class DataDiriPage extends StatefulWidget {
-  const DataDiriPage({super.key});
+  final Map<String, dynamic> kendaraan;
+  final int paket;
+  final DateTime? tanggalPemakaian;
+
+  const DataDiriPage({
+    super.key,
+    required this.kendaraan,
+    required this.paket,
+    required this.tanggalPemakaian,
+  });
 
   @override
   State<DataDiriPage> createState() => _DataDiriPageState();
@@ -11,7 +22,95 @@ class DataDiriPage extends StatefulWidget {
 class _DataDiriPageState extends State<DataDiriPage> {
   int selectedJaminan = 1;
 
+  final namaController = TextEditingController();
+  final ktpController = TextEditingController();
+  final simController = TextEditingController();
+  final hpController = TextEditingController();
+  final alamatController = TextEditingController();
+
+  bool isLoading = false;
+
   @override
+  void dispose() {
+    namaController.dispose();
+    ktpController.dispose();
+    simController.dispose();
+    hpController.dispose();
+    alamatController.dispose();
+    super.dispose();
+  }
+
+  Future<void> submitBooking() async {
+    if (namaController.text.trim().isEmpty ||
+        ktpController.text.trim().isEmpty ||
+        simController.text.trim().isEmpty ||
+        hpController.text.trim().isEmpty ||
+        alamatController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Semua field wajib diisi")));
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt("user_id");
+
+    if (userId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Silakan login ulang")));
+      return;
+    }
+
+    String jaminan = "Kartu Tanda Penduduk";
+
+    if (selectedJaminan == 2) {
+      jaminan = "Kartu Keluarga";
+    } else if (selectedJaminan == 3) {
+      jaminan = "STNK";
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final result = await BookingService.createBooking(
+      userId: userId,
+      kendaraanId: widget.kendaraan["id"],
+      nama: namaController.text.trim(),
+      noKtp: ktpController.text.trim(),
+      noSim: simController.text.trim(),
+      noHp: hpController.text.trim(),
+      alamat: alamatController.text.trim(),
+      tanggalPemakaian: widget.tanggalPemakaian!.toIso8601String(),
+      jaminan: jaminan,
+      paket: widget.paket,
+    );
+
+    setState(() {
+      isLoading = false;
+    });
+
+    if (result["success"] == true) {
+      final bookingId = result["booking_id"];
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RincianTagihanPage(
+            kendaraan: widget.kendaraan,
+            paket: widget.paket,
+            bookingId: bookingId,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result["message"] ?? "Booking gagal")),
+      );
+    }
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
@@ -78,7 +177,10 @@ class _DataDiriPageState extends State<DataDiriPage> {
 
                         const SizedBox(height: 4),
 
-                        _buildTextField("Masukan nama lengkap"),
+                        _buildTextField(
+                          "Masukan nama lengkap",
+                          controller: namaController,
+                        ),
 
                         const SizedBox(height: 10),
 
@@ -89,7 +191,10 @@ class _DataDiriPageState extends State<DataDiriPage> {
 
                         const SizedBox(height: 4),
 
-                        _buildTextField("Masukan No. KTP"),
+                        _buildTextField(
+                          "Masukan No. KTP",
+                          controller: ktpController,
+                        ),
 
                         const SizedBox(height: 10),
 
@@ -100,7 +205,10 @@ class _DataDiriPageState extends State<DataDiriPage> {
 
                         const SizedBox(height: 4),
 
-                        _buildTextField("Masukan No. SIM"),
+                        _buildTextField(
+                          "Masukan No. SIM",
+                          controller: simController,
+                        ),
 
                         const SizedBox(height: 10),
 
@@ -111,7 +219,10 @@ class _DataDiriPageState extends State<DataDiriPage> {
 
                         const SizedBox(height: 4),
 
-                        _buildTextField("Masukan No. Handphone"),
+                        _buildTextField(
+                          "Masukan No. Handphone",
+                          controller: hpController,
+                        ),
 
                         const SizedBox(height: 10),
 
@@ -122,7 +233,10 @@ class _DataDiriPageState extends State<DataDiriPage> {
 
                         const SizedBox(height: 4),
 
-                        _buildTextField("Masukan Alamat"),
+                        _buildTextField(
+                          "Masukan Alamat",
+                          controller: alamatController,
+                        ),
 
                         const SizedBox(height: 18),
 
@@ -165,22 +279,19 @@ class _DataDiriPageState extends State<DataDiriPage> {
                               backgroundColor: const Color(0xFF1976F3),
                             ),
 
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const RincianTagihanPage(),
-                                ),
-                              );
-                            },
+                            onPressed: isLoading ? null : submitBooking,
 
-                            child: const Text(
-                              "Lanjut",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            child: isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    "Lanjut",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
@@ -195,8 +306,9 @@ class _DataDiriPageState extends State<DataDiriPage> {
     );
   }
 
-  Widget _buildTextField(String hint) {
+  Widget _buildTextField(String hint, {TextEditingController? controller}) {
     return TextField(
+      controller: controller,
       decoration: InputDecoration(
         hintText: hint,
 

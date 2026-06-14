@@ -1,8 +1,51 @@
 import 'package:flutter/material.dart';
+
+import '../../services/api_service.dart';
 import 'detail_kendaraan_page.dart';
 
-class PilihMobilPage extends StatelessWidget {
+class PilihMobilPage extends StatefulWidget {
   const PilihMobilPage({super.key});
+
+  @override
+  State<PilihMobilPage> createState() => _PilihMobilPageState();
+}
+
+class _PilihMobilPageState extends State<PilihMobilPage> {
+  List<dynamic> semuaMobil = [];
+  List<dynamic> mobilFiltered = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadMobil();
+  }
+
+  Future<void> loadMobil() async {
+    try {
+      final data = await ApiService.getKendaraan();
+
+      final mobil = data.where((item) {
+        return item["jenis"].toString().toLowerCase() == "mobil";
+      }).toList();
+
+      setState(() {
+        semuaMobil = mobil;
+        mobilFiltered = mobil;
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
+
+  void searchMobil(String keyword) {
+    setState(() {
+      mobilFiltered = semuaMobil.where((item) {
+        return item["nama"].toString().toLowerCase().contains(
+          keyword.toLowerCase(),
+        );
+      }).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,149 +60,179 @@ class PilihMobilPage extends StatelessWidget {
         ),
 
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
 
-              child: Column(
-                children: [
-                  // HEADER
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      ),
+            child: Column(
+              children: [
+                // HEADER
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
 
-                      const Expanded(
-                        child: Text(
-                          "Pilih Mobil",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    ),
 
-                      Image.asset("assets/images/logo_opet.png", width: 28),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // SEARCH
-                  SizedBox(
-                    height: 35,
-                    child: TextField(
-                      style: const TextStyle(color: Colors.white),
-
-                      decoration: InputDecoration(
-                        hintText: "Cari Mobil...",
-
-                        hintStyle: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-
-                        prefixIcon: const Icon(
-                          Icons.search,
+                    const Expanded(
+                      child: Text(
+                        "Pilih Mobil",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
                           color: Colors.white,
-                          size: 18,
-                        ),
-
-                        contentPadding: EdgeInsets.zero,
-
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(4),
-
-                          borderSide: const BorderSide(color: Colors.white),
-                        ),
-
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(4),
-
-                          borderSide: const BorderSide(color: Colors.white),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+
+                    Image.asset("assets/images/logo_opet.png", width: 28),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                // SEARCH
+                SizedBox(
+                  height: 40,
+
+                  child: TextField(
+                    onChanged: searchMobil,
+
+                    style: const TextStyle(color: Colors.white),
+
+                    decoration: InputDecoration(
+                      hintText: "Cari Mobil...",
+
+                      hintStyle: const TextStyle(color: Colors.white70),
+
+                      prefixIcon: const Icon(Icons.search, color: Colors.white),
+
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+                    ),
                   ),
+                ),
 
-                  const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-                  // GRID MOBIL
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
+                Expanded(
+                  child: mobilFiltered.isEmpty
+                      ? const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        )
+                      : GridView.builder(
+                          itemCount: mobilFiltered.length,
 
-                    itemCount: 7,
-
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 0.9,
-                        ),
-
-                    itemBuilder: (context, index) {
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const DetailKendaraanPage(
-                                nama: "Toyota Avanza",
-                                harga: "Rp.350.000/hari",
-                                iconKendaraan: Icons.directions_car,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                                childAspectRatio: 0.78,
                               ),
-                            ),
-                          );
-                        },
 
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
+                          itemBuilder: (context, index) {
+                            final item = mobilFiltered[index];
 
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        DetailKendaraanPage(kendaraan: item),
+                                  ),
+                                );
+                              },
 
-                          child: const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
 
-                            mainAxisAlignment: MainAxisAlignment.end,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
 
-                            children: [
-                              Text(
-                                "Toyota Avanza",
-                                style: TextStyle(
-                                  color: Color(0xFF0A6DD9),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                                  children: [
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+
+                                        child: Image.network(
+                                          "https://opet-rent.web.id/storage/${item["gambar"]}",
+
+                                          width: double.infinity,
+
+                                          fit: BoxFit.cover,
+
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Container(
+                                                  color: Colors.grey.shade300,
+
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.image_not_supported,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    Text(
+                                      item["nama"],
+
+                                      maxLines: 2,
+
+                                      overflow: TextOverflow.ellipsis,
+
+                                      style: const TextStyle(
+                                        color: Color(0xFF0A6DD9),
+
+                                        fontWeight: FontWeight.bold,
+
+                                        fontSize: 12,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 2),
+
+                                    Text(
+                                      "Rp ${double.parse(item["harga_sewa"]).toInt()}/hari",
+
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-
-                              SizedBox(height: 2),
-
-                              Text(
-                                "Rp.350.000/hari",
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
